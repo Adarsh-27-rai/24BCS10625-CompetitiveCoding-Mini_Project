@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rat in the Maze Visualizer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🐀 Rat in the Maze Visualizer</h1>
+        <button id="theme-toggle">🌙 Dark Mode</button>
+    </header>
+    
+    <main class="container">
+        <div class="controls-panel">
+            <div class="control-group">
+                <h3>Mode</h3>
+                <div class="mode-buttons">
+                    <button id="btn-draw-wall" class="active">🧱 Draw Wall</button>
+                    <button id="btn-set-start">🟢 Set Start</button>
+                    <button id="btn-set-end">🔴 Set End</button>
+                </div>
+            </div>
+
+
+
+            <div class="control-group action-buttons">
+                <button id="btn-solve" class="primary">🚀 Solve Maze</button>
+                <button id="btn-random">🎲 Random Walls</button>
+                <button id="btn-clear-path">🧹 Clear Path</button>
+                <button id="btn-clear-board">🗑️ Clear Board</button>
+            </div>
+            
+
+        </div>
+
+        <div class="grid-container">
+            <div id="grid"></div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
