@@ -10,9 +10,6 @@ let currentMode = 'wall'; // 'wall', 'start', 'end'
 let isSolving = false;
 
 const gridElement = document.getElementById('grid');
-const stepCountEl = document.getElementById('step-count');
-const pathOutputEl = document.getElementById('path-output');
-const speedSlider = document.getElementById('speed-slider');
 
 // Directions for movement: D, L, R, U (Lexicographical order is D, L, R, U for Rat in Maze standard)
 // Actually standard is D, L, R, U for "lexicographically smallest path" strings.
@@ -38,8 +35,14 @@ function initGrid() {
             cell.dataset.row = r;
             cell.dataset.col = c;
             
-            if (r === startNode.row && c === startNode.col) cell.classList.add('start');
-            if (r === endNode.row && c === endNode.col) cell.classList.add('end');
+            if (r === startNode.row && c === startNode.col) {
+                cell.classList.add('start');
+                cell.innerText = 'S';
+            }
+            if (r === endNode.row && c === endNode.col) {
+                cell.classList.add('end');
+                cell.innerText = 'E';
+            }
 
             // Event Listeners for drawing
             cell.addEventListener('mousedown', (e) => handleCellMouseDown(e, r, c));
@@ -89,16 +92,20 @@ function updateCell(r, c) {
         }
     } else if (currentMode === 'start') {
         grid[startNode.row][startNode.col].element.classList.remove('start');
+        grid[startNode.row][startNode.col].element.innerText = '';
         startNode = { row: r, col: c };
         cell.isWall = false;
         cell.element.classList.remove('wall');
         cell.element.classList.add('start');
+        cell.element.innerText = 'S';
     } else if (currentMode === 'end') {
         grid[endNode.row][endNode.col].element.classList.remove('end');
+        grid[endNode.row][endNode.col].element.innerText = '';
         endNode = { row: r, col: c };
         cell.isWall = false;
         cell.element.classList.remove('wall');
         cell.element.classList.add('end');
+        cell.element.innerText = 'E';
     }
 }
 
@@ -111,16 +118,12 @@ function clearPath() {
             cell.element.classList.remove('visited', 'path');
         }
     }
-    stepCountEl.innerText = '0';
-    pathOutputEl.innerText = '-';
 }
 
 function clearBoard() {
     startNode = { row: 1, col: 1 };
     endNode = { row: GRID_ROWS - 2, col: GRID_COLS - 2 };
     initGrid();
-    stepCountEl.innerText = '0';
-    pathOutputEl.innerText = '-';
 }
 
 function generateRandomMaze() {
@@ -153,99 +156,35 @@ document.getElementById('btn-clear-path').addEventListener('click', clearPath);
 document.getElementById('btn-clear-board').addEventListener('click', clearBoard);
 document.getElementById('btn-random').addEventListener('click', generateRandomMaze);
 
-document.getElementById('theme-toggle').addEventListener('click', () => {
-    const isDark = document.body.dataset.theme === 'dark';
-    document.body.dataset.theme = isDark ? '' : 'dark';
-});
 
-// Animations and Solver
+
+// Solve
 document.getElementById('btn-solve').addEventListener('click', () => {
     if (isSolving) return;
     clearPath();
     isSolving = true;
     
-    const algorithm = document.getElementById('algorithm-select').value;
-    const animations = [];
-    let path = [];
-
-    if (algorithm === 'backtracking') {
-        path = solveBacktracking(animations);
-    } else if (algorithm === 'bfs') {
-        path = solveBFS(animations);
-    } else if (algorithm === 'dfs') {
-        path = solveDFS(animations);
-    }
-
-    animateAlgorithm(animations, path);
+    findShortestPath();
+    isSolving = false;
 });
 
-// Delay helper based on slider
-function getDelay() {
-    const speed = 101 - parseInt(speedSlider.value); // 1 to 100 -> 100 to 1 ms
-    return speed * 2;
-}
-
-function solveBacktracking(animations) {
-    const visited = Array(GRID_ROWS).fill(false).map(() => Array(GRID_COLS).fill(false));
-    const pathString = [];
-    let finalPath = null;
-
-    function dfs(r, c) {
-        if (r < 0 || c < 0 || r >= GRID_ROWS || c >= GRID_COLS || grid[r][c].isWall || visited[r][c]) {
-            return false;
-        }
-
-        visited[r][c] = true;
-        animations.push({ type: 'visit', r, c });
-
-        if (r === endNode.row && c === endNode.col) {
-            finalPath = [...pathString];
-            return true;
-        }
-
-        for (let dir of directions) {
-            pathString.push(dir.name);
-            if (dfs(r + dir.dRow, c + dir.dCol)) {
-                return true;
-            }
-            pathString.pop();
-        }
-
-        // Backtrack
-        animations.push({ type: 'backtrack', r, c });
-        return false;
-    }
-
-    dfs(startNode.row, startNode.col);
-    
-    // Reconstruct path array from directions for visualization if found
-    let pathNodes = [];
-    if (finalPath) {
-        let currR = startNode.row;
-        let currC = startNode.col;
-        pathNodes.push({r: currR, c: currC});
-        for (let dirName of finalPath) {
-            const dir = directions.find(d => d.name === dirName);
-            currR += dir.dRow;
-            currC += dir.dCol;
-            pathNodes.push({r: currR, c: currC});
-        }
-    }
-
-    return pathNodes;
-}
-
-function solveBFS(animations) {
+function findShortestPath() {
     const visited = Array(GRID_ROWS).fill(false).map(() => Array(GRID_COLS).fill(false));
     const queue = [{ r: startNode.row, c: startNode.col, path: [] }];
     visited[startNode.row][startNode.col] = true;
+    let finalPath = null;
 
     while (queue.length > 0) {
         const { r, c, path } = queue.shift();
-        animations.push({ type: 'visit', r, c });
+        
+        const cellEl = grid[r][c].element;
+        if (!cellEl.classList.contains('start') && !cellEl.classList.contains('end')) {
+            cellEl.classList.add('visited');
+        }
 
         if (r === endNode.row && c === endNode.col) {
-            return [...path, { r, c }];
+            finalPath = path;
+            break;
         }
 
         for (let dir of directions) {
@@ -255,107 +194,28 @@ function solveBFS(animations) {
             if (newR >= 0 && newC >= 0 && newR < GRID_ROWS && newC < GRID_COLS && 
                 !grid[newR][newC].isWall && !visited[newR][newC]) {
                 visited[newR][newC] = true;
-                queue.push({ r: newR, c: newC, path: [...path, { r, c }] });
+                queue.push({ r: newR, c: newC, path: [...path, {r: newR, c: newC}] });
             }
         }
     }
-    return [];
-}
 
-function solveDFS(animations) {
-    const visited = Array(GRID_ROWS).fill(false).map(() => Array(GRID_COLS).fill(false));
-    const stack = [{ r: startNode.row, c: startNode.col, path: [] }];
-
-    while (stack.length > 0) {
-        const { r, c, path } = stack.pop();
-
-        if (r < 0 || c < 0 || r >= GRID_ROWS || c >= GRID_COLS || grid[r][c].isWall || visited[r][c]) {
-            continue;
-        }
-
-        visited[r][c] = true;
-        animations.push({ type: 'visit', r, c });
-
-        if (r === endNode.row && c === endNode.col) {
-            return [...path, { r, c }];
-        }
-
-        // Push in reverse order so D, L, R, U is popped in correct order
-        for (let i = directions.length - 1; i >= 0; i--) {
-            const dir = directions[i];
-            stack.push({ r: r + dir.dRow, c: c + dir.dCol, path: [...path, { r, c }] });
-        }
-    }
-    return [];
-}
-
-function animateAlgorithm(animations, path) {
-    let i = 0;
-
-    function nextStep() {
-        if (i < animations.length) {
-            const { type, r, c } = animations[i];
-            const cellEl = grid[r][c].element;
-            
-            if (type === 'visit') {
-                if (!cellEl.classList.contains('start') && !cellEl.classList.contains('end')) {
-                    cellEl.classList.add('visited');
-                    cellEl.classList.remove('path');
+    if (finalPath) {
+        let i = 0;
+        function animatePath() {
+            if (i < finalPath.length) {
+                const pCell = grid[finalPath[i].r][finalPath[i].c].element;
+                if (!pCell.classList.contains('start') && !pCell.classList.contains('end')) {
+                    pCell.classList.remove('visited');
+                    pCell.classList.add('path');
                 }
-            } else if (type === 'backtrack') {
-                if (!cellEl.classList.contains('start') && !cellEl.classList.contains('end')) {
-                    cellEl.classList.remove('visited');
-                }
+                i++;
+                setTimeout(animatePath, 50);
             }
-            
-            i++;
-            setTimeout(nextStep, getDelay());
-        } else {
-            animatePath(path);
         }
-    }
-    nextStep();
-}
-
-function animatePath(path) {
-    if (path.length === 0) {
-        isSolving = false;
+        animatePath();
+    } else {
         alert("No path found!");
-        return;
     }
-
-    let i = 0;
-    let pathString = "";
-
-    function nextPathStep() {
-        if (i < path.length) {
-            const { r, c } = path[i];
-            const cellEl = grid[r][c].element;
-            
-            if (!cellEl.classList.contains('start') && !cellEl.classList.contains('end')) {
-                cellEl.classList.remove('visited');
-                cellEl.classList.add('path');
-            }
-
-            // Construct path string
-            if (i > 0) {
-                const prev = path[i-1];
-                if (r > prev.r) pathString += "D";
-                else if (r < prev.r) pathString += "U";
-                else if (c > prev.c) pathString += "R";
-                else if (c < prev.c) pathString += "L";
-            }
-
-            stepCountEl.innerText = i;
-            pathOutputEl.innerText = pathString;
-
-            i++;
-            setTimeout(nextPathStep, 50); // Path animates faster
-        } else {
-            isSolving = false;
-        }
-    }
-    nextPathStep();
 }
 
 // Initialize on load
