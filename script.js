@@ -11,9 +11,6 @@ let isSolving = false;
 
 const gridElement = document.getElementById('grid');
 
-// Directions for movement: D, L, R, U (Lexicographical order is D, L, R, U for Rat in Maze standard)
-// Actually standard is D, L, R, U for "lexicographically smallest path" strings.
-// D = +1 row, L = -1 col, R = +1 col, U = -1 row
 const directions = [
     { name: 'D', dRow: 1, dCol: 0 },
     { name: 'L', dRow: 0, dCol: -1 },
@@ -62,13 +59,12 @@ function initGrid() {
         grid.push(row);
     }
     
-    // Global mouse up to stop drawing if dragged outside grid
     document.addEventListener('mouseup', () => isDrawing = false);
 }
 
 function handleCellMouseDown(e, r, c) {
     if (isSolving) return;
-    e.preventDefault(); // Prevent drag ghost image
+    e.preventDefault(); 
     isDrawing = true;
     updateCell(r, c);
 }
@@ -141,7 +137,7 @@ function generateRandomMaze() {
     }
 }
 
-// UI Event Listeners
+
 document.getElementById('btn-draw-wall').addEventListener('click', (e) => setMode('wall', e.target));
 document.getElementById('btn-set-start').addEventListener('click', (e) => setMode('start', e.target));
 document.getElementById('btn-set-end').addEventListener('click', (e) => setMode('end', e.target));
@@ -218,5 +214,4 @@ function findShortestPath() {
     }
 }
 
-// Initialize on load
 initGrid();
